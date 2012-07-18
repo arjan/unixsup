@@ -1,0 +1,6 @@
+/deps
+.eunit
+ebin/*
+logs
+log
+/erl_crash.dump
