@@ -33,6 +33,7 @@ start_link(Identifier, Executable, Args, Dir) when is_atom(Identifier) ->
 %% ------------------------------------------------------------------
 
 init([Identifier, Executable, Args, Dir]) ->
+    process_flag(trap_exit, true),
     {ok, #state{identifier=Identifier,
                 executable=Executable,
                 args=Args,
@@ -45,22 +46,26 @@ handle_cast(_Msg, State) ->
     {noreply, State}.
 
 handle_info(timeout, State) ->
-    lager:info("Restarting unixsup worker, ~p", [State#state.executable]),
+    lager:info("Restarting unixsup worker ~p", [State#state.identifier]),
     {noreply, restart_worker(State)};
 
 handle_info({Port, {exit_status, _N}}, State=#state{port=Port, timeout=T}) ->
-    lager:warning("_N: ~p", [_N]),
+    %% Restart after T ms
     {noreply, State, T};
 
 handle_info({Port, {data, {eol, Line}}}, State=#state{port=Port, identifier=Id}) ->
     lager:info([{unixsup, Id}], "[~s] ~s", [Id, Line]), 
     {noreply, State};
 
+handle_info({'EXIT', Port, normal}, State=#state{port=Port, timeout=T}) ->
+    {noreply, State, T};
+
 handle_info(_Info, State) ->
     lager:warning("Unhandled message: ~p", [_Info]),
     {noreply, State}.
 
-terminate(_Reason, _State) ->
+terminate(_Reason, #state{port=Port}) ->
+    port_close(Port),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
