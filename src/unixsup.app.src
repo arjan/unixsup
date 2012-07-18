@@ -1,0 +1,11 @@
+{application, unixsup,
+ [
+  {description, "Unix daemon supervisor worker"},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {env, []}
+ ]}.
